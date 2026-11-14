@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>回測台 · BTC 回測實驗室</title>
+  <meta name="description" content="BTC/USDT 策略回測台：參數調整、多策略比較、參數最佳化、滾動前進、蒙地卡羅、DSR 與 PBO。">
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/theme.css">
+  <link rel="stylesheet" href="assets/css/backtest.css">
+  <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+  <script type="module" src="assets/js/site.js"></script>
+  <script type="module" src="assets/js/pages/backtest.js"></script>
+</head>
+<body>
+  <header data-site-header></header>
+
+  <main class="page container bt">
+    <!-- ── 左側：設定 ─────────────────────────────── -->
+    <aside class="bt-side glass pad" aria-label="回測設定">
+      <form id="settings" autocomplete="off">
+        <section class="side-sec">
+          <h3>策略</h3>
+          <label class="field"><span>選擇策略</span><select id="strategy" name="strategy"></select></label>
+          <div id="params"></div>
+          <button class="btn small" type="button" id="reset-params">恢復預設參數</button>
+        </section>
+
+        <section class="side-sec">
+          <h3>資料</h3>
+          <div class="field"><span>K 線週期</span>
+            <div class="segmented" id="tf" role="group" aria-label="K 線週期">
+              <button type="button" data-value="1h">1 小時</button>
+              <button type="button" data-value="4h">4 小時</button>
+              <button type="button" data-value="1d">1 日</button>
+            </div>
+          </div>
+          <div class="field-row">
+            <label class="field"><span>開始</span><input type="date" name="from"></label>
+            <label class="field"><span>結束</span><input type="date" name="to"></label>
+          </div>
+          <label class="field"><span>樣本外比例 <em>最後一段保留驗證</em></span>
+            <input type="number" name="oosPct" min="0" max="50" step="5" value="20"></label>
+        </section>
+
+        <section class="side-sec">
+          <h3>交易</h3>
+          <div class="field-row">
+            <label class="field"><span>初始資金 USDT</span><input type="number" name="initialCapital" min="100" step="100" value="10000"></label>
+            <label class="field"><span>每筆投入 %</span><input type="number" name="positionPct" min="1" max="100" step="5" value="100"></label>
+            <label class="field"><span>槓桿倍數</span><input type="number" name="leverage" min="1" max="20" step="1" value="1"></label>
+            <label class="field"><span>手續費 %</span><input type="number" name="feePct" min="0" max="1" step="0.01" value="0.1"></label>
+            <label class="field"><span>滑價 %</span><input type="number" name="slippagePct" min="0" max="1" step="0.01" value="0.05"></label>
+          </div>
+          <div class="field"><span>交易方向</span>
+            <div class="segmented" id="direction" role="group" aria-label="交易方向">
+              <button type="button" data-value="long">只做多</button>
+              <button type="button" data-value="both">多空雙向</button>
+              <button type="button" data-value="short">只做空</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="side-sec">
+          <h3>風控 <em class="muted">0 = 關閉</em></h3>
+          <div class="field-row three">
+            <label class="field"><span>停損 %</span><input type="number" name="stopLossPct" min="0" max="90" step="0.5" value="0"></label>
+            <label class="field"><span>停利 %</span><input type="number" name="takeProfitPct" min="0" max="500" step="0.5" value="0"></label>
+            <label class="field"><span>移動停損 %</span><input type="number" name="trailingPct" min="0" max="90" step="0.5" value="0"></label>
+          </div>
+        </section>
+
+        <div class="side-actions">
+          <button class="btn primary block" type="submit">執行回測</button>
+          <button class="btn block" type="button" id="add-compare">＋ 加入比較</button>
+        </div>
+        <p class="status muted" id="status" role="status">載入資料中…</p>
+      </form>
+    </aside>
+
+    <!-- ── 右側：結果 ─────────────────────────────── -->
+    <section class="bt-main">
+      <article class="glass pad" id="strategy-info"></article>
+
+      <article class="glass pad">
+        <div class="section-title"><h2>績效總覽</h2><span class="sub" id="range-label"></span></div>
+        <div class="kpis" id="kpis"></div>
+        <div id="warnings"></div>
+      </article>
+
+      <article class="glass pad">
+        <div class="section-title">
+          <h2>K 線與訊號</h2>
+          <span class="sub">藍色底 = 樣本外 · 拖曳平移、拖曳座標軸縮放、雙擊座標軸重設</span>
+          <label class="check push"><input type="checkbox" id="show-markers" checked> 顯示買賣點</label>
+        </div>
+        <div class="legend" id="price-legend"></div>
+        <div class="chart chart-price" id="chart-price"></div>
+        <div class="chart chart-panel" id="chart-panel" hidden></div>
+      </article>
+
+      <article class="glass pad">
+        <div class="section-title">
+          <h2>資金曲線</h2>
+          <span class="sub">與買進持有、比較清單疊圖</span>
+          <label class="check push"><input type="checkbox" id="log-scale" checked> 對數座標</label>
+        </div>
+        <div class="chart chart-equity" id="chart-equity"></div>
+        <div id="compare-wrap"></div>
+      </article>
+
+      <article class="glass pad">
+        <div class="section-title"><h2>詳細指標</h2><span class="sub">全期 / 樣本內 / 樣本外 / 買進持有</span></div>
+        <div class="table-wrap"><table class="table" id="metrics-table"></table></div>
+      </article>
+
+      <!-- 防過擬合 -->
+      <article class="glass pad" id="robust">
+        <div class="section-title"><h2>防過擬合檢驗</h2><span class="sub">好看的回測不等於有效的策略</span></div>
+
+        <div class="opt-config">
+          <div class="field"><span>要最佳化的參數 <em>未勾選者固定為目前值</em></span><div id="opt-keys" class="opt-keys"></div></div>
+          <div class="field-row three">
+            <label class="field"><span>最佳化目標</span>
+              <select id="objective"><option value="sharpe">夏普值</option><option value="return">總報酬</option><option value="calmar">報酬 / 最大回撤</option></select></label>
+            <label class="field"><span>組合上限</span><input type="number" id="max-combos" min="10" max="1000" step="10" value="300"></label>
+            <div class="field"><span>網格大小</span><div class="grid-size mono" id="grid-size">—</div></div>
+          </div>
+        </div>
+
+        <div class="tabs" role="tablist">
+          <button role="tab" aria-selected="true" aria-controls="tab-opt" id="t-opt">參數最佳化 + DSR / PBO</button>
+          <button role="tab" aria-selected="false" aria-controls="tab-wf" id="t-wf">滾動前進</button>
+          <button role="tab" aria-selected="false" aria-controls="tab-mc" id="t-mc">蒙地卡羅</button>
+        </div>
+
+        <!-- 參數最佳化 -->
+        <section role="tabpanel" id="tab-opt" aria-labelledby="t-opt">
+          <p class="muted small">只用<strong>樣本內</strong>資料掃描所有參數組合，再用沒看過的樣本外資料驗證最佳參數；同時計算考慮「試了幾次」的緊縮夏普值（DSR）與回測過擬合機率（PBO）。</p>
+          <div class="run-row"><button class="btn primary" id="run-opt">開始最佳化</button><div class="progress" id="prog-opt" hidden><i></i></div></div>
+          <div id="out-opt"></div>
+        </section>
+
+        <!-- 滾動前進 -->
+        <section role="tabpanel" id="tab-wf" aria-labelledby="t-wf" hidden>
+          <p class="muted small">在整個回測區間內，每段用前 N 個月找最佳參數、接下來 M 個月驗證，不斷往前滾動；把所有驗證段接起來，才是「真的事前不知道答案」的績效。</p>
+          <div class="field-row four">
+            <label class="field"><span>樣本內（月）</span><input type="number" id="wf-is" min="1" max="60" value="12"></label>
+            <label class="field"><span>樣本外（月）</span><input type="number" id="wf-oos" min="1" max="24" value="3"></label>
+            <div class="field"><span>窗口模式</span>
+              <div class="segmented" id="wf-mode"><button type="button" data-value="rolling" aria-pressed="true">固定滾動</button><button type="button" data-value="anchored" aria-pressed="false">起點固定</button></div>
+            </div>
+          </div>
+          <div class="run-row"><button class="btn primary" id="run-wf">開始滾動前進</button><div class="progress" id="prog-wf" hidden><i></i></div></div>
+          <div id="out-wf"></div>
+        </section>
+
+        <!-- 蒙地卡羅 -->
+        <section role="tabpanel" id="tab-mc" aria-labelledby="t-mc" hidden>
+          <p class="muted small">用目前的策略與參數在整個區間回測後重抽樣上千次，看「換一種運氣」時報酬與回撤可能落在哪裡。</p>
+          <div class="field-row four">
+            <div class="field"><span>方法</span>
+              <div class="segmented" id="mc-method"><button type="button" data-value="blocks" aria-pressed="true">區塊抽樣</button><button type="button" data-value="trades" aria-pressed="false">交易重抽</button></div>
+            </div>
+            <label class="field"><span>模擬次數</span><input type="number" id="mc-iter" min="100" max="5000" step="100" value="1000"></label>
+            <label class="field"><span>區塊長度（天）</span><input type="number" id="mc-block" min="1" max="180" value="7"></label>
+            <label class="field"><span>亂數種子</span><input type="number" id="mc-seed" min="1" value="42"></label>
+          </div>
+          <div class="run-row"><button class="btn primary" id="run-mc">開始模擬</button><div class="progress" id="prog-mc" hidden><i></i></div></div>
+          <div id="out-mc"></div>
+        </section>
+      </article>
+
+      <article class="glass pad">
+        <div class="section-title">
+          <h2>交易紀錄</h2><span class="sub" id="trade-count"></span>
+          <button class="btn small push" id="download-csv" type="button">下載 CSV</button>
+        </div>
+        <div class="table-wrap trades-wrap"><table class="table" id="trades-table"></table></div>
+        <div class="pager" id="pager"></div>
+      </article>
+    </section>
+  </main>
+
+  <footer data-site-footer></footer>
+</body>
+</html>

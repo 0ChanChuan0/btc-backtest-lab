@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BTC 回測實驗室</title>
+  <meta name="description" content="在星空下測試你的 BTC 交易策略：純前端回測台，內建滾動前進、蒙地卡羅、緊縮夏普值與回測過擬合機率。">
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/theme.css">
+  <link rel="stylesheet" href="assets/css/home.css">
+  <script type="module" src="assets/js/site.js"></script>
+  <script type="module" src="assets/js/pages/home.js"></script>
+</head>
+<body>
+  <header data-site-header></header>
+
+  <main class="page container">
+    <section class="hero">
+      <p class="eyebrow">BTC / USDT · BINANCE · 2017 — 2026</p>
+      <h1>在星空下，<br><span class="grad">誠實地</span>檢驗你的交易策略</h1>
+      <p class="lead">選一個策略、調整參數，立刻看到近九年 BTC 的回測結果。<br>
+        再用滾動前進、蒙地卡羅、緊縮夏普值與過擬合機率，確認那條漂亮的資金曲線不只是運氣。</p>
+      <div class="hero-actions">
+        <a class="btn primary" href="backtest.html">進入回測台</a>
+        <a class="btn" href="guide.html">了解方法</a>
+      </div>
+      <div class="stats glass" id="stats">
+        <div><b id="stat-bars">—</b><span>根 1 小時 K 線</span></div>
+        <div><b id="stat-range">—</b><span>資料區間</span></div>
+        <div><b id="stat-strategies">—</b><span>個策略</span></div>
+        <div><b>4</b><span>種防過擬合工具</span></div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="section-title"><h2>策略星圖</h2><span class="sub">點選卡片，直接帶入回測台</span></div>
+      <div class="cards" id="strategy-cards"></div>
+    </section>
+
+    <section class="block">
+      <div class="section-title"><h2>為什麼要防過擬合？</h2><span class="sub">參數試得夠多，總能找到一條完美的歷史曲線</span></div>
+      <div class="features">
+        <article class="glass pad feature">
+          <span class="feature-icon">◐</span>
+          <h3>樣本內 / 樣本外</h3>
+          <p>保留最後一段資料完全不碰，最佳化只用前段；拿沒看過的資料驗證，才知道參數是否真的有效。</p>
+        </article>
+        <article class="glass pad feature">
+          <span class="feature-icon">⇢</span>
+          <h3>滾動前進</h3>
+          <p>每段用過去 N 個月找參數、未來 M 個月驗證，一路往前滾動。拼接起來的樣本外曲線，才是「事前不知道答案」的真實表現。</p>
+        </article>
+        <article class="glass pad feature">
+          <span class="feature-icon">✺</span>
+          <h3>蒙地卡羅</h3>
+          <p>把交易或行情區塊重抽上千次，得到報酬與最大回撤的分布。看的是最壞 5% 的情境，而不是單一的歷史數字。</p>
+        </article>
+        <article class="glass pad feature">
+          <span class="feature-icon">σ</span>
+          <h3>DSR 與 PBO</h3>
+          <p>緊縮夏普值扣除「試了幾百組」的運氣；回測過擬合機率用組合交叉驗證，估計樣本內冠軍到樣本外變成後段班的機率。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="glass pad extend">
+        <div>
+          <h2>這個網站可以一直長大</h2>
+          <p class="muted">整個專案由一份 <code>CLAUDE.md</code>（與同內容的 <code>AGENTS.md</code>）定義規則：檔案結構、策略外掛格式、成交假設、視覺風格與測試要求。AI 讀完規則，就能照同一套方式新增策略或頁面。</p>
+          <ol class="steps">
+            <li><b>新增策略檔</b> 在 <code>assets/js/strategies/</code> 依範本寫 <code>compute()</code>，回傳每根 K 棒的目標方向</li>
+            <li><b>登記一行</b> 在 <code>strategies/index.js</code> 加入陣列，首頁卡片、參數面板、最佳化網格自動產生</li>
+            <li><b>跑測試</b> <code>npm test</code> 會自動檢查欄位格式與「未來函數」</li>
+          </ol>
+        </div>
+        <a class="btn" id="rules-link" href="#" target="_blank" rel="noopener">閱讀專案規則 →</a>
+      </div>
+    </section>
+  </main>
+
+  <footer data-site-footer></footer>
+</body>
+</html>

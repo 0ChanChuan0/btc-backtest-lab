@@ -1,0 +1,103 @@
+/* 回測台頁面樣式（只用 theme.css 的變數） */
+
+.bt {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: var(--gap);
+  align-items: start;
+  padding-top: 24px;
+}
+
+.bt-side {
+  position: sticky; top: 80px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+.side-sec { padding-bottom: 14px; margin-bottom: 16px; border-bottom: 1px solid var(--glass-border); }
+.side-sec h3 { font-size: 0.95rem; color: var(--text); margin-bottom: 12px; display: flex; gap: 8px; align-items: baseline; }
+.side-sec h3 em { font-style: normal; font-size: 0.75rem; font-weight: 400; }
+.field-row.three { grid-template-columns: repeat(3, 1fr); }
+.field-row.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.side-actions { display: grid; gap: 8px; }
+.status { font-size: 0.82rem; margin: 12px 0 0; min-height: 1.4em; }
+.status.error { color: var(--down); }
+
+.bt-main { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--gap); min-width: 0; }
+
+/* 策略資訊卡 */
+.info-head { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin-bottom: 10px; }
+.info-head h1 { font-size: 1.6rem; margin: 0; }
+.info-head .en { color: var(--muted); font-size: 0.85rem; }
+.info-body { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 20px; }
+.info-body p { color: var(--text-2); font-size: 0.92rem; }
+.rules { display: grid; gap: 8px; margin: 0; }
+.rules div { padding: 10px 12px; border-radius: var(--radius-sm); background: rgba(255, 255, 255, 0.035); font-size: 0.86rem; }
+.rules dt { font-size: 0.75rem; color: var(--muted); }
+.rules dd { margin: 2px 0 0; color: var(--text-2); }
+
+.kpi .value.big { font-size: 1.6rem; }
+#warnings .note { margin-top: 14px; }
+
+/* 圖表 */
+.push { margin-left: auto; }
+.chart { width: 100%; position: relative; }
+.oos-shade {
+  position: absolute; top: 0; z-index: 2; pointer-events: none;
+  background: var(--oos-shade); border-left: 1px dashed rgba(90, 216, 255, 0.45);
+}
+.oos-shade::before {
+  content: '樣本外'; position: absolute; top: 6px; left: 8px;
+  font-size: 0.72rem; color: var(--accent-2); opacity: 0.8;
+}
+#kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 720px) { #kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.chart-price { height: 420px; }
+.chart-panel { height: 150px; margin-top: 6px; border-top: 1px solid var(--glass-border); }
+.chart-equity { height: 340px; }
+.chart-wf { height: 300px; margin-top: 16px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.8rem; color: var(--text-2); margin-bottom: 8px; min-height: 1.2em; }
+.legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+
+/* 比較清單 */
+#compare-wrap .table-wrap { margin-top: 16px; }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 8px; vertical-align: -1px; }
+.x-btn { border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 1rem; padding: 0 4px; }
+.x-btn:hover { color: var(--down); }
+
+/* 防過擬合 */
+.opt-config { padding: 16px; border-radius: var(--radius-sm); background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border); margin-bottom: 18px; }
+.opt-keys { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+.opt-keys label { font-size: 0.86rem; }
+.opt-keys small { color: var(--faint); font-family: var(--mono); font-size: 0.75rem; }
+.grid-size { padding: 8px 0; color: var(--text-2); font-size: 0.88rem; }
+.small { font-size: 0.86rem; }
+.run-row { display: flex; align-items: center; gap: 16px; margin: 8px 0 18px; }
+.run-row .progress { flex: 1; max-width: 360px; }
+.result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 16px; }
+.result-grid h4 { font-size: 0.9rem; color: var(--text-2); margin-bottom: 8px; }
+.plot { width: 100%; height: 220px; display: block; }
+.plot.tall { height: 300px; }
+.verdict { margin-top: 16px; display: grid; gap: 8px; }
+.best-params { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 6px 0 14px; }
+.table-wrap.scroll { max-height: 360px; overflow-y: auto; }
+.legend-inline { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.78rem; color: var(--muted); margin-top: 6px; }
+.legend-inline i { display: inline-block; width: 14px; height: 8px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
+
+/* 交易紀錄 */
+.trades-wrap { max-height: 480px; overflow-y: auto; }
+.pager { display: flex; gap: 6px; align-items: center; justify-content: flex-end; margin-top: 12px; font-size: 0.85rem; color: var(--muted); }
+
+@media (max-width: 1080px) {
+  .bt { grid-template-columns: minmax(0, 1fr); }
+  .bt-side { position: static; max-height: none; min-width: 0; }
+  .info-body { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .bt { padding-top: 16px; gap: 16px; }
+  .chart-price { height: 320px; }
+  .chart-equity { height: 260px; }
+  .field-row.three, .field-row.four { grid-template-columns: 1fr 1fr; }
+  .run-row { flex-wrap: wrap; }
+}

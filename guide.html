@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>方法說明 · BTC 回測實驗室</title>
+  <meta name="description" content="回測台的成交假設、績效指標，以及樣本外切分、滾動前進、蒙地卡羅、DSR、PBO 等防過擬合方法說明。">
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/theme.css">
+  <link rel="stylesheet" href="assets/css/guide.css">
+  <script type="module" src="assets/js/site.js"></script>
+</head>
+<body>
+  <header data-site-header></header>
+
+  <main class="page container guide">
+    <nav class="toc glass pad" aria-label="本頁目錄">
+      <strong>目錄</strong>
+      <a href="#execution">成交假設</a>
+      <a href="#metrics">績效指標</a>
+      <a href="#split">樣本內 / 樣本外</a>
+      <a href="#walkforward">滾動前進</a>
+      <a href="#montecarlo">蒙地卡羅</a>
+      <a href="#dsr">緊縮夏普值 DSR</a>
+      <a href="#pbo">過擬合機率 PBO</a>
+      <a href="#limits">限制與免責</a>
+    </nav>
+
+    <div class="doc">
+      <header class="doc-head">
+        <p class="eyebrow">METHODOLOGY</p>
+        <h1>方法說明</h1>
+        <p class="lead">回測結果只有在假設清楚的前提下才有意義。這裡說明回測台怎麼成交、怎麼計算績效，以及每一種防過擬合工具在檢查什麼。</p>
+      </header>
+
+      <section id="execution" class="glass pad">
+        <h2>成交假設</h2>
+        <ul>
+          <li><b>收盤產生訊號、下一根開盤成交。</b>策略在第 <i>i</i> 根 K 棒收盤時決定方向，於第 <i>i+1</i> 根開盤進出場，避免使用到「當根還不知道」的資訊。</li>
+          <li><b>訊號是目標方向。</b>策略每根 K 棒輸出 1（做多）、−1（做空）或 0（空手）；方向改變時先平倉再反手。「只做多」會把 −1 視為空手。</li>
+          <li><b>部位大小。</b>每次進場投入「當下權益 × 每筆投入 %」作為保證金，名目部位 = 保證金 × 槓桿，損益會複利累積。</li>
+          <li><b>成本。</b>每次買或賣都扣手續費（預設 0.1%，Binance 現貨一般費率）與滑價（預設 0.05%）。</li>
+          <li><b>盤中風控。</b>停損、移動停損、強制平倉用當根高低價判斷；同一根同時碰到停損與停利時，保守地視為先停損；跳空越過停損價時以開盤價成交。</li>
+          <li><b>風控出場後不立即重進。</b>訊號必須先變成其他方向，才會再次朝同一方向進場。</li>
+          <li><b>強制平倉。</b>槓桿 L 倍的多單在價格下跌 1/L 時、空單在上漲 1/L 時，損失整筆保證金。</li>
+          <li><b>區間最後一根收盤強制平倉</b>，讓所有損益都實現。</li>
+        </ul>
+      </section>
+
+      <section id="metrics" class="glass pad">
+        <h2>績效指標</h2>
+        <div class="table-wrap"><table class="table defs">
+          <tbody>
+            <tr><td class="text">年化報酬（CAGR）</td><td class="text">(期末 ÷ 期初)<sup>1/年數</sup> − 1；加密貨幣 24 小時交易，一年 = 8,760 根 1h K 棒</td></tr>
+            <tr><td class="text">最大回撤</td><td class="text">資金曲線從歷史高點往下跌的最大幅度</td></tr>
+            <tr><td class="text">夏普值</td><td class="text">每根報酬的平均 ÷ 標準差 × √(一年根數)，假設無風險利率為 0</td></tr>
+            <tr><td class="text">索提諾</td><td class="text">同夏普值，但分母只計下跌波動</td></tr>
+            <tr><td class="text">卡瑪比率</td><td class="text">年化報酬 ÷ 最大回撤</td></tr>
+            <tr><td class="text">獲利因子</td><td class="text">所有獲利交易總和 ÷ 所有虧損交易總和（絕對值）</td></tr>
+            <tr><td class="text">曝險時間</td><td class="text">有持倉的 K 棒比例</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <section id="split" class="glass pad">
+        <h2>樣本內 / 樣本外</h2>
+        <p>把回測區間最後一段（預設 20%）保留為<b>樣本外</b>。參數最佳化只在前面的<b>樣本內</b>資料上進行，最後才用樣本外驗證。圖表中以藍色底色標示樣本外區間，指標表也分欄列出。</p>
+        <p class="note">如果樣本外的夏普值遠低於樣本內，代表參數很可能只是「記住」了歷史，而不是抓到可延續的規律。</p>
+      </section>
+
+      <section id="walkforward" class="glass pad">
+        <h2>滾動前進（Walk-forward）</h2>
+        <p>單一切分只驗證一次，結果可能受特定行情影響。滾動前進把資料切成許多段：</p>
+        <ol>
+          <li>用前 N 個月（樣本內）掃描所有參數組合，選出目標函數最佳的一組。</li>
+          <li>用這組參數交易接下來的 M 個月（樣本外），資金接續上一段。</li>
+          <li>窗口往前移動 M 個月，重複以上步驟。「固定滾動」的樣本內長度不變；「起點固定」的樣本內會越來越長。</li>
+        </ol>
+        <p>把所有樣本外段落接起來，就是「每次都只用當時已知資料做決策」的績效。<b>Walk-forward 效率（WFE）</b>= 樣本外平均年化報酬 ÷ 樣本內平均年化報酬，一般認為 0.5 以上代表最佳化方法有延續性。</p>
+      </section>
+
+      <section id="montecarlo" class="glass pad">
+        <h2>蒙地卡羅模擬</h2>
+        <p>歷史只發生一次，但同樣的策略換一種順序或行情組合，結果可能差很多。回測台提供兩種重抽樣：</p>
+        <ul>
+          <li><b>交易重抽：</b>把每筆交易的報酬（相對進場時權益）有放回地重抽，重新複利成一條資金曲線。適合交易次數夠多（建議 30 筆以上）的策略。</li>
+          <li><b>區塊抽樣（block bootstrap）：</b>把每根 K 棒的策略報酬切成固定天數的區塊重新拼接，保留行情的連續漲跌與波動聚集。</li>
+        </ul>
+        <p>重複上千次後，觀察最終報酬與最大回撤的分布，特別是<b>最壞 5% 的情境</b>。亂數使用固定種子，相同設定會得到相同結果。</p>
+      </section>
+
+      <section id="dsr" class="glass pad">
+        <h2>緊縮夏普值（Deflated Sharpe Ratio）</h2>
+        <p>試了越多組參數，最好那一組的夏普值就越可能只是運氣。Bailey 與 López de Prado（2014）提出：在 N 次嘗試、各組夏普值變異數為 V 時，純運氣下最佳夏普值的期望約為</p>
+        <p class="formula">SR₀ = √V × [ (1 − γ) Φ⁻¹(1 − 1/N) + γ Φ⁻¹(1 − 1/(N·e)) ]</p>
+        <p>其中 γ ≈ 0.5772 為 Euler–Mascheroni 常數。DSR 是在考慮報酬偏態、峰度與樣本長度後，「真實夏普值大於 SR₀」的機率；一般以 95% 作為顯著門檻。回測台同時列出不校正的 PSR（真實夏普 &gt; 0 的機率）供對照。</p>
+      </section>
+
+      <section id="pbo" class="glass pad">
+        <h2>回測過擬合機率（PBO）</h2>
+        <p>使用組合對稱交叉驗證（CSCV，Bailey 等人 2016）：</p>
+        <ol>
+          <li>把樣本內每組參數的報酬序列切成 16 段。</li>
+          <li>從 16 段中取 8 段當作「樣本內」、其餘 8 段當作「樣本外」，共有 C(16, 8) = 12,870 種切法。</li>
+          <li>每種切法下，找出樣本內夏普最高的參數，計算它在樣本外的相對排名 ω，取 λ = ln(ω / (1 − ω))。</li>
+          <li><b>PBO = λ ≤ 0 的比例</b>，也就是「樣本內冠軍到樣本外掉到後半段」的機率。</li>
+        </ol>
+        <p class="note">PBO 低於 20% 通常代表參數選擇具穩健性；接近或超過 50% 代表最佳化幾乎等於擲硬幣。</p>
+      </section>
+
+      <section id="limits" class="glass pad">
+        <h2>限制與免責</h2>
+        <ul>
+          <li>資料為 Binance BTC/USDT 1 小時 K 線，4 小時與日線由 1 小時線以 UTC 對齊合成；部分時段交易所停機造成缺口。</li>
+          <li>未模擬資金費率、借幣利息、流動性與部分成交；強制平倉為簡化模型。</li>
+          <li>所有計算都在瀏覽器中完成，不會上傳任何資料。</li>
+          <li><b>本網站僅供教育與研究，不構成任何投資建議。</b>過去績效不代表未來表現。</li>
+        </ul>
+      </section>
+    </div>
+  </main>
+
+  <footer data-site-footer></footer>
+</body>
+</html>

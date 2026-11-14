@@ -1,0 +1,19 @@
+{
+  "symbol": "BTCUSDT",
+  "exchange": "Binance",
+  "timeframe": "1h",
+  "file": "data/btc_usdt_1h.bin",
+  "count": 76498,
+  "start": 1502942400,
+  "end": 1778792400,
+  "layout": [
+    "time:u32",
+    "open:f32",
+    "high:f32",
+    "low:f32",
+    "close:f32",
+    "volume:f32"
+  ],
+  "gaps": 28,
+  "generated": "2026-11-14T06:13:33Z"
+}

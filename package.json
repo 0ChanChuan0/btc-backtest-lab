@@ -1,0 +1,11 @@
+{
+  "name": "btc-backtest-lab",
+  "private": true,
+  "type": "module",
+  "description": "BTC 量化回測實驗室：純前端回測台，含滾動前進、蒙地卡羅、DSR 與 PBO 防過擬合工具",
+  "scripts": {
+    "test": "node --test",
+    "dev": "python -m http.server 8765",
+    "build:data": "python scripts/build_data.py"
+  }
+}
