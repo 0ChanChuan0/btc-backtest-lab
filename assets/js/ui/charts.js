@@ -39,11 +39,26 @@ export function baseOptions(extra = {}) {
   };
 }
 
+/**
+ * 數值陣列 → line series 資料。
+ * Lightweight Charts 遇到空值不會斷線，會把前後兩點直接連起來；
+ * 因此中途的 NaN 改成「沿用上一個值的透明點」，空值後的第一個點也設為透明，讓線真的斷開。
+ * 開頭暖機期的 NaN 仍用空白點（不畫）。
+ */
 const toLine = (time, values) => {
   const out = new Array(values.length);
+  let last = NaN, inGap = false;
   for (let i = 0; i < values.length; i++) {
     const v = values[i];
-    out[i] = Number.isFinite(v) ? { time: time[i], value: v } : { time: time[i] };
+    if (Number.isFinite(v)) {
+      out[i] = inGap ? { time: time[i], value: v, color: 'transparent' } : { time: time[i], value: v };
+      last = v; inGap = false;
+    } else if (Number.isFinite(last)) {
+      out[i] = { time: time[i], value: last, color: 'transparent' };
+      inGap = true;
+    } else {
+      out[i] = { time: time[i] };
+    }
   }
   return out;
 };
